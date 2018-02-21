@@ -1,11 +1,11 @@
-#Elasticsearch Import Script
-##Introduction
+# Elasticsearch Import Script
+## Introduction
 This script provides a more convenient interface for getting data into [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html). The script was originally developed while researching Elasticsearch's potential uses for indexing various kinds of data. It was written to make the research more convenient and quicker; it was not ever intended to be a standalone project or product. The script may not be completely PEP8 or linted; however, maybe it will help someone else with importing data into Elasticsearch. :simple_smile:
-##Requirements
+## Requirements
 The script requires Python. It was written in Python 2.7 (Sorry! Some workplaces have not made the jump to Python 3 yet.) and requires the excellent third-party libraries [requests](http://docs.python-requests.org/en/master/) and [Natural Language Toolkit](https://www.nltk.org/). This project does not provide a setup script at this time for installing these libraries.
-###Elasticsearch
+### Elasticsearch
 This script requires a running and reachable instance of Elasticsearch. Define the domain name or IP address for Elasticsearch as an environment variable called 'ES_HOST' before running the script. This can be done by either exporting the variable manually using the command line or by importing an environment file containing a declaration for ES_HOST.
-##Usage
+## Usage
 ```
 python elasticsearch-file-importer.py --help
 usage: elasticsearch-file-importer.py [-h] {CSV,Logs,JSON} ...
@@ -23,7 +23,7 @@ data_type:
     Logs           Import a log into ElasticSearch
     JSON           Import a JSON file into Elasticsearch
 ```
-###CSV Files
+### CSV Files
 When processing CSV files, the script first fetches the Elasticsearch mapping for the given index to determine which columns in the CSV file should be read and inserted into Elasticsearch documents. This functionality allows for only importing a subset of the columns from the CSV file instead of all of the columns. All of the columns can still be imported by defining an Elasticsearch index mapping with all of the columns.
 
 **The Elasticsearch index mapping's field names must exactly match the names of the columns in the CSV file for the columns to be imported.**
@@ -45,7 +45,7 @@ optional arguments:
   --stopWordsFile STOPWORDSFILE
                         Path to a file of stopwords
 ```
-###Logs
+### Logs
 The script will parse a log file line by line into JSON using a regular expression pattern to separate the components of the log format into named groups of characters. The regular expression pattern is defined in the first line of a separate file. An example of such a regular expression can be found in the regex-template.example file.
 **When parsing logs, the script will not fetch the Elasticsearch index mapping first. The script will read the log file and attempt to post the data to the supplied Elasticsearch index. The index does not have to be defined before hand, but defining an index mapping can sometimes provide better results when searching or aggregating indexed data.**
 ```
@@ -60,7 +60,7 @@ positional arguments:
 optional arguments:
   -h, --help  show this help message and exit
 ```
-###JSON
+### JSON
 The script will read a JSON file and post the data into Elasticsearch.
 **When readiong JSON, the script will not fetch the Elasticsearch index mapping first. The script will read the JSON file and attempt to post the data to the supplied Elasticsearch index. The index does not have to be defined before hand, but defining an index mapping can sometimes provide better results when searching or aggregating indexed data.**
 ```
