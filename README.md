@@ -1,6 +1,6 @@
 #Elasticsearch Import Script
 ##Introduction
-This script provides a more convenient interface for getting data into [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html). The script was originally developed while researching Elasticsearch's potential uses for indexing various kinds of data. It was written to make the research more convenient and quicker; it was not ever intended to be a standalone project or product. However, maybe it will help someone else with importing data into Elasticsearch. :simple_smile:
+This script provides a more convenient interface for getting data into [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html). The script was originally developed while researching Elasticsearch's potential uses for indexing various kinds of data. It was written to make the research more convenient and quicker; it was not ever intended to be a standalone project or product. The script may not be completely PEP8 or linted; however, maybe it will help someone else with importing data into Elasticsearch. :simple_smile:
 ##Requirements
 The script requires Python. It was written in Python 2.7 (Sorry! Some workplaces have not made the jump to Python 3 yet.) and requires the excellent third-party libraries [requests](http://docs.python-requests.org/en/master/) and [Natural Language Toolkit](https://www.nltk.org/). This project does not provide a setup script at this time for installing these libraries.
 ###Elasticsearch
