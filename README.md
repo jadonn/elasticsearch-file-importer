@@ -2,7 +2,13 @@
 ## Introduction
 This script provides a more convenient interface for getting data into [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html). The script was originally developed while researching Elasticsearch's potential uses for indexing various kinds of data. It was written to make the research more convenient and quicker; it was not ever intended to be a standalone project or product. The script may not be completely PEP8 or linted; however, maybe it will help someone else with importing data into Elasticsearch.
 ## Requirements
-The script requires Python. It was written in Python 2.7 (Sorry! Some workplaces have not made the jump to Python 3 yet.) and requires the excellent third-party libraries [requests](http://docs.python-requests.org/en/master/) and [Natural Language Toolkit](https://www.nltk.org/). This project does not provide a setup script at this time for installing these libraries.
+The script requires Python. It was written in Python 2.7 (Sorry! Some workplaces have not made the jump to Python 3 yet) and requires the excellent third-party libraries [requests](http://docs.python-requests.org/en/master/) and [Natural Language Toolkit](https://www.nltk.org/). This project provides a requirements.txt file for easily installing dependencies using pip. It is generally a good practice to use [virtualenv](https://virtualenv.pypa.io/en/stable/) in Python 2.7 to setup a separate Python environment for installing binaries to prevent conflicts among dependencies.
+
+This script's dependencies can be installed by running the following command from within the project folder:
+```
+pip -r requirements.txt
+```
+pip will install NLTK (and Numpy, which NLTK recommends installing) and Requests.
 ### Elasticsearch
 This script requires a running and reachable instance of Elasticsearch. Define the domain name or IP address for Elasticsearch as an environment variable called 'ES_HOST' before running the script. This can be done by either exporting the variable manually using the command line or by importing an environment file containing a declaration for ES_HOST.
 ## Usage
