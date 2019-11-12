@@ -3,7 +3,6 @@ Importer script for reading data from CSV, log, and JSON files and posting it to
 '''
 import csv
 import json
-import argparse
 import os
 import sys
 import re
@@ -12,54 +11,56 @@ import requests
 from nltk.util import everygrams
 
 def process_report(args):
-    es_mapping_fields, es_mapping_name = retrieve_es_mapping_fields(args.esIndex)
     try:
         csv_data = read_csv_data(args.csvFile)
     except IOError as error:
         sys.exit('I/O error({0}): {1} {2}'.format(error.errno, error.strerror, args.csvFile))
-
+    es_mapping_fields, es_mapping_name = retrieve_es_mapping_fields(args.esIndex) if not args.force else {}, 'doc'
     bulk_row_data = ''
     row_count = 0
     create_action_string = '{"index": {}}'
     for row in csv_data:
         row_data = {}
         text_tokens = []
-        for field in es_mapping_fields.keys():
-            if es_mapping_fields[field]['type'] == 'text':
-                text = row.get(field, None)
-                row_data[field] = text
-                if text:
-                    stopwords_file = args.stopWordsFile
-                    if stopwords_file:
-                        stopwords = set(line.strip() for line in open(stopwords_file))
-                        text_tokens = text.replace(':', ' ').replace(',', ' ').replace('.', ' ').replace(';', ' ').split()
-                        good_tokens = []
-                        for token in text_tokens:
-                            if token not in stopwords and token.lower() not in stopwords:
-                                good_tokens.append(token)
-                        text_tokens = good_tokens
-            elif 'Keywords' in field:
-                ngram_keywords = []
-                for length in range(1, 6):
-                    ngram_keywords.append([])
-                    for text_ngram in (list(everygrams(text_tokens, length, length))):
-                        keyword = ''
-                        for token in text_ngram:
-                            keyword = '%s %s' % (keyword, token)
-                        ngram_keywords[length - 1].append(keyword)
-                row_data[field] = {}
-                bigrams_field_name = "%sBigrams" % field
-                trigrams_field_name = "%sTrigrams" % field
-                fourgrams_field_name = "%sFourgrams" % field
-                fivegrams_field_name = "%sFivegrams" % field
-                row_data[field] = ngram_keywords[0]
-                row_data[bigrams_field_name] = ngram_keywords[1]
-                row_data[trigrams_field_name] = ngram_keywords[2]
-                row_data[fourgrams_field_name] = ngram_keywords[3]
-                row_data[fivegrams_field_name] = ngram_keywords[4]
-                text_tokens = []
-            else:
-                row_data[field] = row.get(field, None)
+        if not args.force:
+            for field in es_mapping_fields.keys():
+                if es_mapping_fields[field]['type'] == 'text':
+                    text = row.get(field, None)
+                    row_data[field] = text
+                    if text:
+                        stopwords_file = args.stopWordsFile
+                        if stopwords_file:
+                            stopwords = set(line.strip() for line in open(stopwords_file))
+                            text_tokens = text.replace(':', ' ').replace(',', ' ').replace('.', ' ').replace(';', ' ').split()
+                            good_tokens = []
+                            for token in text_tokens:
+                                if token not in stopwords and token.lower() not in stopwords:
+                                    good_tokens.append(token)
+                            text_tokens = good_tokens
+                elif 'Keywords' in field:
+                    ngram_keywords = []
+                    for length in range(1, 6):
+                        ngram_keywords.append([])
+                        for text_ngram in (list(everygrams(text_tokens, length, length))):
+                            keyword = ''
+                            for token in text_ngram:
+                                keyword = '%s %s' % (keyword, token)
+                            ngram_keywords[length - 1].append(keyword)
+                    row_data[field] = {}
+                    bigrams_field_name = "%sBigrams" % field
+                    trigrams_field_name = "%sTrigrams" % field
+                    fourgrams_field_name = "%sFourgrams" % field
+                    fivegrams_field_name = "%sFivegrams" % field
+                    row_data[field] = ngram_keywords[0]
+                    row_data[bigrams_field_name] = ngram_keywords[1]
+                    row_data[trigrams_field_name] = ngram_keywords[2]
+                    row_data[fourgrams_field_name] = ngram_keywords[3]
+                    row_data[fivegrams_field_name] = ngram_keywords[4]
+                    text_tokens = []
+                else:
+                    row_data[field] = row.get(field, None)
+        else:
+            row_data = row
         row_data_string = json.dumps(row_data)
         bulk_row_data = '%s\n%s\n%s\n' % (bulk_row_data, create_action_string, row_data_string)
         row_count += 1
@@ -161,30 +162,3 @@ def prepare_simple_json_bulk_import(json_data, es_index, es_mapping):
         entry_data_string = json.dumps(entry)
         bulk_entry_string = '%s\n%s\n%s\n' % (bulk_entry_string, create_action_string, entry_data_string)
     send_data_to_elasticsearch(bulk_entry_string, es_index, es_mapping)
-
-if __name__ == '__main__':
-
-    PARSER = argparse.ArgumentParser(
-        description='Read a data from a variety of file formats and post the data to Elasticsearch'
-        )
-    
-    SUBPARSERS = PARSER.add_subparsers(title="data_type", description="Supported data format", help="Choose one of the supported data formats.")
-    CSV_PARSER = SUBPARSERS.add_parser("CSV", help="Import a CSV file into Elasticsearch")
-    CSV_PARSER.add_argument('csvFile', help='Path to the CSV file to read')
-    CSV_PARSER.add_argument('esIndex', help='Name of the Elasticsearch index mapping')
-    CSV_PARSER.add_argument('--stopWordsFile', help='Path to a file of stopwords')
-    CSV_PARSER.set_defaults(func=process_report)
-
-    LOG_PARSER = SUBPARSERS.add_parser("Logs", help="Import a log into ElasticSearch")
-    LOG_PARSER.add_argument("logFile", help="Path to the log file to read")
-    LOG_PARSER.add_argument("formatFile", help="Path to file containing log format regex string.")
-    LOG_PARSER.add_argument("esIndex", help="Name of the Elasticsearch index mapping")
-    LOG_PARSER.set_defaults(func=process_log)
-
-    JSON_PARSER = SUBPARSERS.add_parser("JSON", help="Import a JSON file into Elasticsearch")
-    JSON_PARSER.add_argument("jsonFile", help="Path to JSON file to read")
-    JSON_PARSER.add_argument("esIndex", help="Name of the Elasticsearch index mapping")
-    JSON_PARSER.set_defaults(func=process_json)
-
-    ARGS = PARSER.parse_args()
-    ARGS.func(ARGS)
