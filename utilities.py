@@ -11,54 +11,56 @@ import requests
 from nltk.util import everygrams
 
 def process_report(args):
-    es_mapping_fields, es_mapping_name = retrieve_es_mapping_fields(args.esIndex)
     try:
         csv_data = read_csv_data(args.csvFile)
     except IOError as error:
         sys.exit('I/O error({0}): {1} {2}'.format(error.errno, error.strerror, args.csvFile))
-
+    es_mapping_fields, es_mapping_name = retrieve_es_mapping_fields(args.esIndex) if not args.force else {}, 'doc'
     bulk_row_data = ''
     row_count = 0
     create_action_string = '{"index": {}}'
     for row in csv_data:
         row_data = {}
         text_tokens = []
-        for field in es_mapping_fields.keys():
-            if es_mapping_fields[field]['type'] == 'text':
-                text = row.get(field, None)
-                row_data[field] = text
-                if text:
-                    stopwords_file = args.stopWordsFile
-                    if stopwords_file:
-                        stopwords = set(line.strip() for line in open(stopwords_file))
-                        text_tokens = text.replace(':', ' ').replace(',', ' ').replace('.', ' ').replace(';', ' ').split()
-                        good_tokens = []
-                        for token in text_tokens:
-                            if token not in stopwords and token.lower() not in stopwords:
-                                good_tokens.append(token)
-                        text_tokens = good_tokens
-            elif 'Keywords' in field:
-                ngram_keywords = []
-                for length in range(1, 6):
-                    ngram_keywords.append([])
-                    for text_ngram in (list(everygrams(text_tokens, length, length))):
-                        keyword = ''
-                        for token in text_ngram:
-                            keyword = '%s %s' % (keyword, token)
-                        ngram_keywords[length - 1].append(keyword)
-                row_data[field] = {}
-                bigrams_field_name = "%sBigrams" % field
-                trigrams_field_name = "%sTrigrams" % field
-                fourgrams_field_name = "%sFourgrams" % field
-                fivegrams_field_name = "%sFivegrams" % field
-                row_data[field] = ngram_keywords[0]
-                row_data[bigrams_field_name] = ngram_keywords[1]
-                row_data[trigrams_field_name] = ngram_keywords[2]
-                row_data[fourgrams_field_name] = ngram_keywords[3]
-                row_data[fivegrams_field_name] = ngram_keywords[4]
-                text_tokens = []
-            else:
-                row_data[field] = row.get(field, None)
+        if not args.force:
+            for field in es_mapping_fields.keys():
+                if es_mapping_fields[field]['type'] == 'text':
+                    text = row.get(field, None)
+                    row_data[field] = text
+                    if text:
+                        stopwords_file = args.stopWordsFile
+                        if stopwords_file:
+                            stopwords = set(line.strip() for line in open(stopwords_file))
+                            text_tokens = text.replace(':', ' ').replace(',', ' ').replace('.', ' ').replace(';', ' ').split()
+                            good_tokens = []
+                            for token in text_tokens:
+                                if token not in stopwords and token.lower() not in stopwords:
+                                    good_tokens.append(token)
+                            text_tokens = good_tokens
+                elif 'Keywords' in field:
+                    ngram_keywords = []
+                    for length in range(1, 6):
+                        ngram_keywords.append([])
+                        for text_ngram in (list(everygrams(text_tokens, length, length))):
+                            keyword = ''
+                            for token in text_ngram:
+                                keyword = '%s %s' % (keyword, token)
+                            ngram_keywords[length - 1].append(keyword)
+                    row_data[field] = {}
+                    bigrams_field_name = "%sBigrams" % field
+                    trigrams_field_name = "%sTrigrams" % field
+                    fourgrams_field_name = "%sFourgrams" % field
+                    fivegrams_field_name = "%sFivegrams" % field
+                    row_data[field] = ngram_keywords[0]
+                    row_data[bigrams_field_name] = ngram_keywords[1]
+                    row_data[trigrams_field_name] = ngram_keywords[2]
+                    row_data[fourgrams_field_name] = ngram_keywords[3]
+                    row_data[fivegrams_field_name] = ngram_keywords[4]
+                    text_tokens = []
+                else:
+                    row_data[field] = row.get(field, None)
+        else:
+            row_data = row
         row_data_string = json.dumps(row_data)
         bulk_row_data = '%s\n%s\n%s\n' % (bulk_row_data, create_action_string, row_data_string)
         row_count += 1

@@ -13,6 +13,7 @@ if __name__ == '__main__':
     CSV_PARSER.add_argument('csvFile', help='Path to the CSV file to read')
     CSV_PARSER.add_argument('esIndex', help='Name of the Elasticsearch index mapping')
     CSV_PARSER.add_argument('--stopWordsFile', help='Path to a file of stopwords')
+    CSV_PARSER.add_argument('--force', help='Index regardless of the index mapping', action='store_true')
     CSV_PARSER.set_defaults(func=utilities.process_report)
 
     LOG_PARSER = SUBPARSERS.add_parser("Logs", help="Import a log into ElasticSearch")
